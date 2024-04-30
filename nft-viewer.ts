@@ -1,47 +1,54 @@
+import express from 'express';
+import dotenv from 'dotenv';
 import { ethers } from 'ethers';
-import * as dotenv from 'dotenv';
+import path from 'path';
 
 dotenv.config();
 
-interface NftOwnershipData {
-  [tokenId: string]: string;
-}
+const app: express.Application = express();
+const port = process.env.PORT || 3000;
 
-class NftViewer {
-  private infuraProjectId: string;
-  private infuraApiKey: string;
-  private provider: ethers.providers.InfuraProvider;
-  private nftContractAddress: string;
-  private erc721Abi: ethers.utils.Interface;
+app.use(express.static('public'));
 
-  constructor() {
-    this.infuraProjectId = process.env.INFURA_PROJECT_ID!;
-    this.infuraApiKey = process.env.INFURA_API_KEY!;
-    this.nftContractAddress = process.env.NFT_CONTRACT_ADDRESS!;
-    this.provider = new ethers.providers.InfuraProvider(this.infuraProjectId, this.infuraApiKey);
-    this.erc721Abi = new ethers.utils.Interface([
-      'function balanceOf(address owner) public view returns (uint256)',
-      'function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256)',
-    ]);
+app.get('/api/nfts', async (req: express.Request, res: express.Response) => {
+  const address = req.query.address as string;
+  if (!address || !ethers.utils.isAddress(address)) {
+    return res.status(400).send('Invalid Ethereum address');
   }
 
-  async getNftOwnershipData(address: string): Promise<NftOwnershipData> {
-    try {
-      const nftContract = new ethers.Contract(this.nftContractAddress, this.erc721Abi, this.provider);
-      const balance = await nftContract.balanceOf(address);
-      const ownershipData: NftOwnershipData = {};
+  try {
+    const provider = new ethers.providers.InfuraProvider(process.env.INFURA_NETWORK, {
+      projectId: process.env.INFURA_PROJECT_ID,
+      projectSecret: process.env.INFURA_API_KEY,
+    });
+    const nftContract = new ethers.Contract(
+      process.env.NFT_CONTRACT_ADDRESS!,
+      [
+        'function balanceOf(address owner) public view returns (uint256)',
+        'function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256)'
+      ],
+      provider
+    );
+    
+    const balance = await nftContract.balanceOf(address);
+    const ownershipData: { [tokenId: string]: string } = {};
 
-      for (let i = 0; i < balance.toNumber(); i++) {
-        const tokenId = await nftContract.tokenOfOwnerByIndex(address, i);
-        ownershipData[tokenId.toString()] = address;
-      }
-
-      return ownershipData;
-    } catch (error) {
-      console.error(`Error getting NFT ownership data: ${error.message}`);
-      throw error;
+    for (let i = 0; i < balance.toNumber(); i++) {
+      const tokenId = await nftContract.tokenOfOwnerByIndex(address, i);
+      ownershipData[tokenId.toString()] = address;
     }
-  }
-}
 
-export default NftViewer;
+    res.json(ownershipData);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    res.status(500).send('Failed to fetch NFT data');
+  }
+});
+
+app.get('/', (req: express.Request, res: express.Response) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
