@@ -15,7 +15,6 @@ class NftViewer {
   private erc721Abi: ethers.utils.Interface;
 
   constructor() {
-    // Accessing environment variables
     this.infuraProjectId = process.env.INFURA_PROJECT_ID!;
     this.infuraApiKey = process.env.INFURA_API_KEY!;
     this.nftContractAddress = process.env.NFT_CONTRACT_ADDRESS!;
