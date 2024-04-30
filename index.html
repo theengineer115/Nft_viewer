@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFT Viewer</title>
+</head>
+<body>
+  <h1>NFT Viewer</h1>
+  <form>
+    <label for="address-input">Enter Ethereum address:</label>
+    <input type="text" id="address-input" name="address">
+    <button id="get-nft-data-btn">Get NFT Data</button>
+  </form>
+  <div id="nft-data-container"></div>
+
+  <script>
+    const addressInput = document.getElementById('address-input');
+    const getNftDataBtn = document.getElementById('get-nft-data-btn');
+    const nftDataContainer = document.getElementById('nft-data-container');
+
+    getNftDataBtn.addEventListener('click', async (event) => {
+      event.preventDefault();
+      const address = addressInput.value.trim();
+      if (!ethers.utils.isAddress(address)) {
+        alert('Invalid Ethereum address');
+        return;
+      }
+
+      try {
+        const nftViewer = new NftViewer('INFURA_PROJECT_ID', 'INFURA_API_KEY', 'nft_contract_address');
+        const ownershipData = await nftViewer.getNftOwnershipData(address);
+
+        const nftDataHtml = Object.keys(ownershipData).map((tokenId) => {
+          return `<p>Token ID: ${tokenId} - Owner: ${ownershipData[tokenId]}</p>`;
+        }).join('');
+
+        nftDataContainer.innerHTML = nftDataHtml;
+      } catch (error) {
+        console.error(error);
+        nftDataContainer.innerHTML = `Error: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
