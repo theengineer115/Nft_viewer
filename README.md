@@ -12,7 +12,7 @@ This repository contains the code for a feature of a Proof of Concept (POC) deve
 
 ## Technology Stack
 
-- **Frontend**: HTML, CSS, JavaScript
+- **Frontend**: HTML, JavaScript
 - **Backend**: Node.js, Express, TypeScript
 - **Blockchain Interaction**: Ethers.js, Infura API
 
